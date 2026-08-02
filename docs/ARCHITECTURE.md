@@ -66,7 +66,8 @@ GitHub Actions runs the canonical `scripts/check.sh` quality gate for pushes
 and pull requests on Python 3.11 and Python 3.13.
 
 The workflow uses an offscreen Qt platform so application startup can be
-validated without a graphical display server.
+validated without a graphical display server. Ubuntu jobs install the EGL
+runtime library required when PySide6 imports QtGui.
 
 The workflow token receives read-only repository-content permission. Checkout
 credentials are not retained after source retrieval, and reusable actions are

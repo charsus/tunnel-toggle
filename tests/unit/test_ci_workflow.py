@@ -71,3 +71,14 @@ def test_ci_runs_the_canonical_project_gate() -> None:
 
     assert "QT_QPA_PLATFORM: offscreen" in workflow
     assert "run: ./scripts/check.sh" in workflow
+
+
+def test_ci_installs_qt_runtime_before_python_dependencies() -> None:
+    """Ubuntu CI should provide the shared library required by QtGui."""
+    workflow = load_workflow()
+
+    runtime_step = workflow.index("- name: Install Qt runtime libraries")
+    dependency_step = workflow.index("- name: Install project and development tools")
+
+    assert runtime_step < dependency_step
+    assert ("sudo apt-get install --no-install-recommends --yes libegl1") in workflow
