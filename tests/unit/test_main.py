@@ -17,6 +17,11 @@ from tunnel_toggle.application import (
     SingleInstanceLock,
 )
 from tunnel_toggle.main import main
+from tunnel_toggle.settings import (
+    AppSettings,
+    NetworkSettings,
+    SettingsError,
+)
 
 
 class FakeApplicationRuntime(QObject):
@@ -67,17 +72,29 @@ def test_smoke_test_initializes_and_exits(
         probe_lock.release()
 
 
-def test_smoke_test_does_not_construct_runtime(
+def test_smoke_test_does_not_load_permanent_services(
     qapp: QApplication,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Smoke mode should avoid all permanent runtime services."""
+    """Smoke mode should avoid settings and runtime services."""
     del qapp
 
-    def fail_runtime_creation() -> FakeApplicationRuntime:
+    def fail_settings_load() -> AppSettings:
+        raise AssertionError("Smoke mode loaded application settings.")
+
+    def fail_runtime_creation(
+        *,
+        settings: AppSettings,
+    ) -> FakeApplicationRuntime:
+        del settings
         raise AssertionError("Smoke mode constructed the application runtime.")
 
+    monkeypatch.setattr(
+        main_module,
+        "_load_application_settings",
+        fail_settings_load,
+    )
     monkeypatch.setattr(
         main_module,
         "create_application_runtime",
@@ -93,20 +110,40 @@ def test_smoke_test_does_not_construct_runtime(
     )
 
 
-def test_normal_start_runs_and_stops_runtime(
+def test_normal_start_loads_settings_and_runs_runtime(
     qapp: QApplication,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Ordinary startup should own one runtime lifecycle."""
+    """Ordinary startup should load settings and own one runtime."""
     del qapp
     lock_path = tmp_path / LOCK_FILENAME
     runtime = FakeApplicationRuntime()
+    settings = AppSettings(
+        setup_completed=True,
+        network=NetworkSettings(
+            connection_uuid=("44444444-4444-4444-4444-444444444444"),
+        ),
+    )
+    received_settings: list[AppSettings] = []
+
+    monkeypatch.setattr(
+        main_module,
+        "_load_application_settings",
+        lambda: settings,
+    )
+
+    def create_runtime(
+        *,
+        settings: AppSettings,
+    ) -> FakeApplicationRuntime:
+        received_settings.append(settings)
+        return runtime
 
     monkeypatch.setattr(
         main_module,
         "create_application_runtime",
-        lambda: runtime,
+        create_runtime,
     )
     monkeypatch.setattr(
         main_module,
@@ -117,6 +154,7 @@ def test_normal_start_runs_and_stops_runtime(
     exit_code = main([], lock_path=lock_path)
 
     assert exit_code == 23
+    assert received_settings == [settings]
     assert runtime.start_count == 1
     assert runtime.stop_count == 1
 
@@ -126,6 +164,47 @@ def test_normal_start_runs_and_stops_runtime(
         assert probe_lock.acquire(timeout_ms=0).acquired is True
     finally:
         probe_lock.release()
+
+
+def test_settings_failure_prevents_runtime_start(
+    qapp: QApplication,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Unsafe or future settings should stop startup cleanly."""
+    del qapp
+
+    def fail_settings_load() -> AppSettings:
+        raise SettingsError("Settings were created by a newer Tunnel Toggle version.")
+
+    def fail_runtime_creation(
+        *,
+        settings: AppSettings,
+    ) -> FakeApplicationRuntime:
+        del settings
+        raise AssertionError("Runtime was created after settings failed.")
+
+    monkeypatch.setattr(
+        main_module,
+        "_load_application_settings",
+        fail_settings_load,
+    )
+    monkeypatch.setattr(
+        main_module,
+        "create_application_runtime",
+        fail_runtime_creation,
+    )
+
+    exit_code = main(
+        [],
+        lock_path=tmp_path / LOCK_FILENAME,
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert captured.out == ""
+    assert captured.err == ("Settings were created by a newer Tunnel Toggle version.\n")
 
 
 def test_smoke_test_reports_existing_instance(

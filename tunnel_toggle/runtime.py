@@ -7,6 +7,7 @@ from PySide6.QtCore import QObject, Signal, Slot
 from tunnel_toggle.controller import ApplicationController
 from tunnel_toggle.network_manager import NetworkManagerBackend
 from tunnel_toggle.network_monitor import NetworkManagerMonitor
+from tunnel_toggle.settings import AppSettings
 from tunnel_toggle.tray import TrayShell
 from tunnel_toggle.tray_presenter import TrayPresenter
 
@@ -106,13 +107,23 @@ class ApplicationRuntime(QObject):
         self.quit_requested.emit()
 
 
+def selected_connection_uuid(
+    settings: AppSettings,
+) -> str | None:
+    """Return the usable selected UUID from validated settings."""
+    if not settings.setup_completed:
+        return None
+
+    return settings.network.connection_uuid
+
+
 def create_application_runtime(
     *,
-    connection_uuid: str | None = None,
+    settings: AppSettings,
     parent: QObject | None = None,
 ) -> ApplicationRuntime:
-    """Create the default production runtime object graph."""
+    """Create the production runtime from validated settings."""
     return ApplicationRuntime(
-        connection_uuid=connection_uuid,
+        connection_uuid=selected_connection_uuid(settings),
         parent=parent,
     )

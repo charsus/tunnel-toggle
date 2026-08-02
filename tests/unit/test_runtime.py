@@ -8,7 +8,12 @@ from pytestqt.qtbot import QtBot
 from tunnel_toggle.models import TunnelState
 from tunnel_toggle.network_manager import NetworkManagerBackend
 from tunnel_toggle.network_monitor import NetworkManagerMonitor
-from tunnel_toggle.runtime import ApplicationRuntime
+from tunnel_toggle.runtime import (
+    ApplicationRuntime,
+    create_application_runtime,
+    selected_connection_uuid,
+)
+from tunnel_toggle.settings import AppSettings, NetworkSettings
 from tunnel_toggle.tray import TrayShell
 
 TARGET_UUID = "44444444-4444-4444-4444-444444444444"
@@ -220,3 +225,64 @@ def test_runtime_retains_all_composed_services(
     )
 
     assert all(component is not None for component in components)
+
+
+def test_incomplete_setup_ignores_stored_uuid() -> None:
+    """A partially completed setup must remain unconfigured."""
+    settings = AppSettings(
+        setup_completed=False,
+        network=NetworkSettings(
+            connection_uuid=TARGET_UUID,
+        ),
+    )
+
+    assert selected_connection_uuid(settings) is None
+
+
+def test_completed_setup_exposes_selected_uuid() -> None:
+    """Completed setup should provide the configured connection."""
+    settings = AppSettings(
+        setup_completed=True,
+        network=NetworkSettings(
+            connection_uuid=TARGET_UUID,
+        ),
+    )
+
+    assert selected_connection_uuid(settings) == TARGET_UUID
+
+
+def test_runtime_factory_uses_completed_setup(
+    qtbot: QtBot,
+) -> None:
+    """The production factory should configure the controller."""
+    settings = AppSettings(
+        setup_completed=True,
+        network=NetworkSettings(
+            connection_uuid=TARGET_UUID,
+        ),
+    )
+
+    runtime = create_application_runtime(settings=settings)
+    qtbot.addWidget(runtime.tray.menu)
+
+    assert runtime.controller.connection_uuid == TARGET_UUID
+    assert runtime.controller.state.network.state is (TunnelState.UNKNOWN)
+
+
+def test_runtime_factory_keeps_incomplete_setup_unconfigured(
+    qtbot: QtBot,
+) -> None:
+    """An incomplete setup should produce the safe tray state."""
+    settings = AppSettings(
+        setup_completed=False,
+        network=NetworkSettings(
+            connection_uuid=TARGET_UUID,
+        ),
+    )
+
+    runtime = create_application_runtime(settings=settings)
+    qtbot.addWidget(runtime.tray.menu)
+
+    assert runtime.controller.connection_uuid is None
+    assert runtime.controller.state.network.state is (TunnelState.UNCONFIGURED)
+    assert runtime.tray.status_action.text() == ("Status: Not configured")

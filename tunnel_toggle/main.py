@@ -21,6 +21,11 @@ from tunnel_toggle.runtime import (
     ApplicationRuntime,
     create_application_runtime,
 )
+from tunnel_toggle.settings import (
+    AppSettings,
+    SettingsError,
+    SettingsRepository,
+)
 
 
 def build_argument_parser() -> argparse.ArgumentParser:
@@ -69,7 +74,15 @@ def main(
             print(f"{APPLICATION_NAME} {__version__}")
             return 0
 
-        runtime = create_application_runtime()
+        try:
+            settings = _load_application_settings()
+            runtime = create_application_runtime(
+                settings=settings,
+            )
+        except (SettingsError, ValueError) as error:
+            print(str(error), file=sys.stderr)
+            return 1
+
         quit_handler = application.quit
         stop_handler = runtime.stop
 
@@ -92,6 +105,11 @@ def main(
             runtime.stop()
 
         instance_lock.release()
+
+
+def _load_application_settings() -> AppSettings:
+    """Load validated per-user settings for normal startup."""
+    return SettingsRepository.create_default().load()
 
 
 def _execute_application(

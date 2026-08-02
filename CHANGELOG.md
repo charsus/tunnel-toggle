@@ -24,3 +24,4 @@ All notable changes to Tunnel Toggle will be documented in this file.
 - Minimal Qt system tray shell and non-blocking startup smoke mode
 - Controller-aware tray presentation and tunnel toggle action
 - Production runtime composition with orderly Qt shutdown
+- Safe loading of the selected NetworkManager connection from typed settings

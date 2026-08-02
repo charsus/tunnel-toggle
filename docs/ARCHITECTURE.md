@@ -60,6 +60,17 @@ are outside the initial project scope.
 Modules will be added only when their implementation milestone begins. Empty
 placeholder modules should be avoided.
 
+## Runtime configuration
+
+Normal startup loads the complete validated `AppSettings` value through the
+typed settings repository.
+
+The runtime factory uses the selected NetworkManager UUID only when setup is
+marked complete. An incomplete setup remains unconfigured even if a partial or
+stale UUID exists in storage.
+
+Smoke-test startup does not read persistent application settings.
+
 ## Runtime composition
 
 The application runtime owns the production NetworkManager backend, monitor,
