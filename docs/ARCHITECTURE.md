@@ -60,6 +60,19 @@ are outside the initial project scope.
 Modules will be added only when their implementation milestone begins. Empty
 placeholder modules should be avoided.
 
+## Application controller
+
+The application controller owns the aggregate immutable application state.
+
+It translates user requests into backend operations, represents transitional
+states immediately, and performs a canonical NetworkManager state query after
+successful connect or disconnect commands.
+
+NetworkManager monitor output is treated only as an activity notification.
+The controller responds by requesting canonical state for the selected UUID.
+
+The tray and dialogs must not call NetworkManager services directly.
+
 ## NetworkManager strategy
 
 Version 0.1.0 will use `nmcli` through an abstract backend.

@@ -19,3 +19,4 @@ All notable changes to Tunnel Toggle will be documented in this file.
 - Read-only NetworkManager active tunnel-state queries
 - Asynchronous NetworkManager connect and disconnect commands
 - Event-driven NetworkManager monitoring with automatic restart
+- Application controller with canonical tunnel state coordination
