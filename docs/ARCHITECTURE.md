@@ -50,6 +50,7 @@ are outside the initial project scope.
 - `tray.py`: System tray icon, menu, and notifications
 - `settings.py`: Typed QSettings access and migrations
 - `network_manager.py`: NetworkManager discovery, state, and control
+- `network_monitor.py`: Event-driven NetworkManager monitoring
 - `process_monitor.py`: Protected-application monitoring
 - `public_ip.py`: Optional asynchronous public-IP checking
 - `log_config.py`: Rotating and sanitized logging

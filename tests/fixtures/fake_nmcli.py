@@ -6,6 +6,7 @@ from __future__ import annotations
 import os
 import sys
 import time
+from pathlib import Path
 
 DISCOVERY_ARGUMENTS = [
     "--terse",
@@ -27,6 +28,8 @@ STATE_QUERY_ARGUMENTS = [
     "show",
     "--active",
 ]
+
+MONITOR_ARGUMENTS = ["monitor"]
 
 TARGET_UUID = "44444444-4444-4444-4444-444444444444"
 
@@ -57,6 +60,8 @@ def main() -> int:
         operation = "connect"
     elif arguments == DISCONNECT_ARGUMENTS:
         operation = "disconnect"
+    elif arguments == MONITOR_ARGUMENTS:
+        operation = "monitor"
     else:
         print("Unexpected arguments.", file=sys.stderr)
         return 64
@@ -91,7 +96,10 @@ def main() -> int:
     if operation == "connect":
         return run_connect(mode)
 
-    return run_disconnect(mode)
+    if operation == "disconnect":
+        return run_disconnect(mode)
+
+    return run_monitor(mode)
 
 
 def run_discovery(mode: str) -> int:
@@ -166,6 +174,51 @@ def run_disconnect(mode: str) -> int:
 
     print("Unknown disconnect mode.", file=sys.stderr)
     return 71
+
+
+def run_monitor(mode: str) -> int:
+    """Simulate a long-running NetworkManager monitor."""
+    if mode == "monitor_activity":
+        print("NetworkManager activity", flush=True)
+        time.sleep(2)
+        return 0
+
+    if mode == "monitor_burst":
+        print("Activity one", flush=True)
+        print("Activity two", flush=True)
+        print("Activity three", flush=True)
+        time.sleep(2)
+        return 0
+
+    if mode == "monitor_exit":
+        return 12
+
+    if mode == "monitor_restart":
+        counter_path_text = os.environ.get("TUNNEL_TOGGLE_FAKE_NMCLI_COUNTER_FILE")
+
+        if not counter_path_text:
+            print("Counter file not configured.", file=sys.stderr)
+            return 72
+
+        counter_path = Path(counter_path_text)
+
+        try:
+            count = int(counter_path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            count = 0
+
+        count += 1
+        counter_path.write_text(str(count), encoding="utf-8")
+
+        if count == 1:
+            return 13
+
+        print("Activity after restart", flush=True)
+        time.sleep(2)
+        return 0
+
+    print("Unknown monitor mode.", file=sys.stderr)
+    return 73
 
 
 if __name__ == "__main__":
