@@ -4,6 +4,8 @@ All notable changes to Tunnel Toggle will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.0-alpha] - 2026-08-02
+
 ### Added
 
 - Initial local Git repository
@@ -32,3 +34,6 @@ All notable changes to Tunnel Toggle will be documented in this file.
 - Conservative user-local installer and managed uninstaller
 - Audited wheel and source-distribution build configuration
 - Read-only GitHub Actions CI for Python 3.11 and 3.13
+
+[Unreleased]: https://github.com/charsus/tunnel-toggle/compare/v0.1.0-alpha...HEAD
+[0.1.0-alpha]: https://github.com/charsus/tunnel-toggle/releases/tag/v0.1.0-alpha

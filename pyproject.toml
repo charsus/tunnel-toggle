@@ -6,15 +6,39 @@ build-backend = "setuptools.build_meta"
 name = "tunnel-toggle"
 version = "0.1.0a1"
 description = "A KDE Plasma system tray application for controlling a NetworkManager tunnel."
+keywords = [
+    "kde",
+    "networkmanager",
+    "plasma",
+    "vpn",
+    "wireguard",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: System :: Networking",
+]
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     { name = "Tunnel Toggle contributors" },
 ]
 dependencies = [
     "PySide6>=6.7,<7",
 ]
+
+[project.urls]
+Homepage = "https://github.com/charsus/tunnel-toggle"
+Source = "https://github.com/charsus/tunnel-toggle"
+Issues = "https://github.com/charsus/tunnel-toggle/issues"
+Changelog = "https://github.com/charsus/tunnel-toggle/blob/main/CHANGELOG.md"
 
 [project.scripts]
 tunnel-toggle = "tunnel_toggle.main:main"

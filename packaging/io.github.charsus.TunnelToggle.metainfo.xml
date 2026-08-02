@@ -45,5 +45,19 @@
     <name>Tunnel Toggle contributors</name>
   </developer>
 
+  <releases>
+    <release
+        version="0.1.0-alpha"
+        date="2026-08-02"
+        type="development">
+      <description>
+        <p>
+          Initial public alpha with NetworkManager profile selection,
+          tray-based connection control, user-local installation, and KDE
+          desktop integration.
+        </p>
+      </description>
+    </release>
+  </releases>
   <content_rating type="oars-1.1"/>
 </component>
