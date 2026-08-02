@@ -60,6 +60,17 @@ are outside the initial project scope.
 Modules will be added only when their implementation milestone begins. Empty
 placeholder modules should be avoided.
 
+## Tray presenter
+
+The tray presenter is the only component that connects the application
+controller to the system tray shell.
+
+It converts domain tunnel states into complete tray view states and routes the
+currently valid Connect or Disconnect action to the controller. Transitional,
+unknown, unconfigured, and error states expose no actionable toggle operation.
+
+The tray shell remains unaware of NetworkManager and application-state rules.
+
 ## System tray shell
 
 The system tray shell owns the persistent `QSystemTrayIcon`, its context menu,

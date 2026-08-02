@@ -22,3 +22,4 @@ All notable changes to Tunnel Toggle will be documented in this file.
 - Application controller with canonical tunnel state coordination
 - Qt application metadata and single-instance lifecycle support
 - Minimal Qt system tray shell and non-blocking startup smoke mode
+- Controller-aware tray presentation and tunnel toggle action

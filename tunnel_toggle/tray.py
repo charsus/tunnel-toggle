@@ -14,12 +14,14 @@ from PySide6.QtWidgets import (
 from tunnel_toggle.application import APPLICATION_NAME
 
 INITIAL_STATUS = "Starting…"
+INITIAL_TOGGLE_TEXT = "Connect"
 THEME_ICON_NAME = "network-vpn"
 
 
 class TrayShell(QObject):
-    """Own the persistent tray icon and its minimal context menu."""
+    """Own the persistent tray icon and its context menu."""
 
+    toggle_requested = Signal()
     quit_requested = Signal()
 
     def __init__(
@@ -35,10 +37,18 @@ class TrayShell(QObject):
         self._status_action = QAction(self._menu)
         self._status_action.setEnabled(False)
 
+        self._toggle_action = QAction(
+            INITIAL_TOGGLE_TEXT,
+            self._menu,
+        )
+        self._toggle_action.setEnabled(False)
+        self._toggle_action.triggered.connect(self._handle_toggle_triggered)
+
         self._quit_action = QAction("Quit", self._menu)
         self._quit_action.triggered.connect(self._handle_quit_triggered)
 
         self._menu.addAction(self._status_action)
+        self._menu.addAction(self._toggle_action)
         self._menu.addSeparator()
         self._menu.addAction(self._quit_action)
 
@@ -57,6 +67,11 @@ class TrayShell(QObject):
     def status_action(self) -> QAction:
         """Return the read-only status action."""
         return self._status_action
+
+    @property
+    def toggle_action(self) -> QAction:
+        """Return the connection toggle action."""
+        return self._toggle_action
 
     @property
     def quit_action(self) -> QAction:
@@ -83,6 +98,21 @@ class TrayShell(QObject):
         self._status_action.setText(f"Status: {normalized_status}")
         self._tray_icon.setToolTip(f"{APPLICATION_NAME}: {normalized_status}")
 
+    def set_toggle(
+        self,
+        *,
+        text: str,
+        enabled: bool,
+    ) -> None:
+        """Update the connection action presentation."""
+        normalized_text = text.strip()
+
+        if not normalized_text:
+            raise ValueError("toggle text must not be empty.")
+
+        self._toggle_action.setText(normalized_text)
+        self._toggle_action.setEnabled(enabled)
+
     def show(self) -> None:
         """Make the tray entry visible."""
         self._tray_icon.show()
@@ -92,8 +122,14 @@ class TrayShell(QObject):
         self._tray_icon.hide()
 
     @Slot(bool)
+    def _handle_toggle_triggered(self, checked: bool) -> None:
+        """Translate QAction's checked value into a simple signal."""
+        del checked
+        self.toggle_requested.emit()
+
+    @Slot(bool)
     def _handle_quit_triggered(self, checked: bool) -> None:
-        """Translate QAction's checked argument into a simple signal."""
+        """Translate QAction's checked value into a simple signal."""
         del checked
         self.quit_requested.emit()
 
