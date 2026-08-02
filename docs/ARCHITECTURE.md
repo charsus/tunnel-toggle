@@ -60,6 +60,18 @@ are outside the initial project scope.
 Modules will be added only when their implementation milestone begins. Empty
 placeholder modules should be avoided.
 
+## System tray shell
+
+The system tray shell owns the persistent `QSystemTrayIcon`, its context menu,
+and presentation-only actions.
+
+The initial shell exposes read-only startup status and an explicit quit action.
+It does not call NetworkManager directly. Controller integration will update
+the tray through immutable application-state changes.
+
+The tray menu is retained by the shell because the tray icon does not own its
+context menu.
+
 ## Qt application lifecycle
 
 Application metadata is configured centrally before services or user

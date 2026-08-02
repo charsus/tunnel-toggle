@@ -1,9 +1,88 @@
-"""Application entry point for Tunnel Toggle."""
+"""Executable Qt application entry point."""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from collections.abc import Sequence
+from pathlib import Path
+
+from PySide6.QtWidgets import QApplication
 
 from tunnel_toggle import __version__
+from tunnel_toggle.application import (
+    APPLICATION_NAME,
+    APPLICATION_SLUG,
+    SingleInstanceLock,
+    configure_application_metadata,
+)
+from tunnel_toggle.tray import TrayShell
 
 
-def main() -> int:
-    """Start Tunnel Toggle."""
-    print(f"Tunnel Toggle {__version__}")
-    return 0
+def build_argument_parser() -> argparse.ArgumentParser:
+    """Build the Tunnel Toggle command-line parser."""
+    parser = argparse.ArgumentParser(
+        prog=APPLICATION_SLUG,
+        description=("Control a selected NetworkManager tunnel from the system tray."),
+    )
+    parser.add_argument(
+        "--smoke-test",
+        action="store_true",
+        help=("initialize the Qt lifecycle and exit without entering the event loop"),
+    )
+    return parser
+
+
+def main(
+    argv: Sequence[str] | None = None,
+    *,
+    lock_path: str | Path | None = None,
+) -> int:
+    """Start Tunnel Toggle or run its non-blocking smoke test."""
+    command_arguments = list(sys.argv[1:]) if argv is None else list(argv)
+    options = build_argument_parser().parse_args(command_arguments)
+
+    application = _get_or_create_application()
+    configure_application_metadata()
+    application.setQuitOnLastWindowClosed(False)
+
+    instance_lock = SingleInstanceLock(lock_path)
+    lock_result = instance_lock.acquire(timeout_ms=100)
+
+    if not lock_result.acquired:
+        print(
+            lock_result.message or "Tunnel Toggle could not start.",
+            file=sys.stderr,
+        )
+        return 1
+
+    tray: TrayShell | None = None
+
+    try:
+        if options.smoke_test:
+            print(f"{APPLICATION_NAME} {__version__}")
+            return 0
+
+        tray = TrayShell()
+        tray.quit_requested.connect(application.quit)
+        tray.show()
+
+        return application.exec()
+    finally:
+        if tray is not None:
+            tray.hide()
+
+        instance_lock.release()
+
+
+def _get_or_create_application() -> QApplication:
+    """Return the process QApplication, creating it when needed."""
+    existing_application = QApplication.instance()
+
+    if existing_application is None:
+        return QApplication([APPLICATION_SLUG])
+
+    if not isinstance(existing_application, QApplication):
+        raise RuntimeError("A non-widget Qt application already exists.")
+
+    return existing_application

@@ -21,3 +21,4 @@ All notable changes to Tunnel Toggle will be documented in this file.
 - Event-driven NetworkManager monitoring with automatic restart
 - Application controller with canonical tunnel state coordination
 - Qt application metadata and single-instance lifecycle support
+- Minimal Qt system tray shell and non-blocking startup smoke mode
