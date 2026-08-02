@@ -60,6 +60,18 @@ are outside the initial project scope.
 Modules will be added only when their implementation milestone begins. Empty
 placeholder modules should be avoided.
 
+## Qt application lifecycle
+
+Application metadata is configured centrally before services or user
+interface components are created.
+
+A per-user `QLockFile` in Qt's runtime directory prevents multiple Tunnel
+Toggle processes from running simultaneously. Lock acquisition uses a short
+bounded timeout and reports normalized failure reasons.
+
+The lock is held for the complete Qt application lifetime and released during
+orderly shutdown.
+
 ## Application controller
 
 The application controller owns the aggregate immutable application state.
