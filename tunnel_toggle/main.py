@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import argparse
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from contextlib import suppress
 from pathlib import Path
 
 from PySide6.QtWidgets import QApplication
@@ -16,7 +17,10 @@ from tunnel_toggle.application import (
     SingleInstanceLock,
     configure_application_metadata,
 )
-from tunnel_toggle.tray import TrayShell
+from tunnel_toggle.runtime import (
+    ApplicationRuntime,
+    create_application_runtime,
+)
 
 
 def build_argument_parser() -> argparse.ArgumentParser:
@@ -56,23 +60,45 @@ def main(
         )
         return 1
 
-    tray: TrayShell | None = None
+    runtime: ApplicationRuntime | None = None
+    quit_handler: Callable[[], None] | None = None
+    stop_handler: Callable[[], None] | None = None
 
     try:
         if options.smoke_test:
             print(f"{APPLICATION_NAME} {__version__}")
             return 0
 
-        tray = TrayShell()
-        tray.quit_requested.connect(application.quit)
-        tray.show()
+        runtime = create_application_runtime()
+        quit_handler = application.quit
+        stop_handler = runtime.stop
 
-        return application.exec()
+        runtime.quit_requested.connect(quit_handler)
+        application.aboutToQuit.connect(stop_handler)
+
+        runtime.start()
+
+        return _execute_application(application)
     finally:
-        if tray is not None:
-            tray.hide()
+        if runtime is not None:
+            if stop_handler is not None:
+                with suppress(RuntimeError, TypeError):
+                    application.aboutToQuit.disconnect(stop_handler)
+
+            if quit_handler is not None:
+                with suppress(RuntimeError, TypeError):
+                    runtime.quit_requested.disconnect(quit_handler)
+
+            runtime.stop()
 
         instance_lock.release()
+
+
+def _execute_application(
+    application: QApplication,
+) -> int:
+    """Enter the Qt event loop."""
+    return application.exec()
 
 
 def _get_or_create_application() -> QApplication:

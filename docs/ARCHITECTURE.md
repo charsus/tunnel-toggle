@@ -60,6 +60,21 @@ are outside the initial project scope.
 Modules will be added only when their implementation milestone begins. Empty
 placeholder modules should be avoided.
 
+## Runtime composition
+
+The application runtime owns the production NetworkManager backend, monitor,
+application controller, tray shell, and tray presenter as one Qt object graph.
+
+Runtime construction does not start services. Startup first activates the
+controller and monitor, then exposes the tray. Shutdown first hides the tray,
+then stops the controller and monitor.
+
+The runtime forwards the tray's quit request without giving presentation
+components access to the `QApplication` object.
+
+The executable entry point connects runtime cleanup to Qt's `aboutToQuit`
+signal and also performs idempotent cleanup in its finalization path.
+
 ## Tray presenter
 
 The tray presenter is the only component that connects the application

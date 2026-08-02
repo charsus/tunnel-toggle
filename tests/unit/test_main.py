@@ -5,8 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QApplication
 
+import tunnel_toggle.main as main_module
 from tunnel_toggle import __version__
 from tunnel_toggle.application import (
     APPLICATION_NAME,
@@ -15,6 +17,26 @@ from tunnel_toggle.application import (
     SingleInstanceLock,
 )
 from tunnel_toggle.main import main
+
+
+class FakeApplicationRuntime(QObject):
+    """Controllable runtime test double for the entry point."""
+
+    quit_requested = Signal()
+
+    def __init__(self) -> None:
+        """Create a stopped fake runtime."""
+        super().__init__()
+        self.start_count = 0
+        self.stop_count = 0
+
+    def start(self) -> None:
+        """Record runtime startup."""
+        self.start_count += 1
+
+    def stop(self) -> None:
+        """Record runtime shutdown."""
+        self.stop_count += 1
 
 
 def test_smoke_test_initializes_and_exits(
@@ -36,6 +58,67 @@ def test_smoke_test_initializes_and_exits(
     assert exit_code == 0
     assert captured.out == (f"{APPLICATION_NAME} {__version__}\n")
     assert captured.err == ""
+
+    probe_lock = SingleInstanceLock(lock_path)
+
+    try:
+        assert probe_lock.acquire(timeout_ms=0).acquired is True
+    finally:
+        probe_lock.release()
+
+
+def test_smoke_test_does_not_construct_runtime(
+    qapp: QApplication,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Smoke mode should avoid all permanent runtime services."""
+    del qapp
+
+    def fail_runtime_creation() -> FakeApplicationRuntime:
+        raise AssertionError("Smoke mode constructed the application runtime.")
+
+    monkeypatch.setattr(
+        main_module,
+        "create_application_runtime",
+        fail_runtime_creation,
+    )
+
+    assert (
+        main(
+            ["--smoke-test"],
+            lock_path=tmp_path / LOCK_FILENAME,
+        )
+        == 0
+    )
+
+
+def test_normal_start_runs_and_stops_runtime(
+    qapp: QApplication,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Ordinary startup should own one runtime lifecycle."""
+    del qapp
+    lock_path = tmp_path / LOCK_FILENAME
+    runtime = FakeApplicationRuntime()
+
+    monkeypatch.setattr(
+        main_module,
+        "create_application_runtime",
+        lambda: runtime,
+    )
+    monkeypatch.setattr(
+        main_module,
+        "_execute_application",
+        lambda application: 23,
+    )
+
+    exit_code = main([], lock_path=lock_path)
+
+    assert exit_code == 23
+    assert runtime.start_count == 1
+    assert runtime.stop_count == 1
 
     probe_lock = SingleInstanceLock(lock_path)
 
