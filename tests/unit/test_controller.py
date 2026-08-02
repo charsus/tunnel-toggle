@@ -20,9 +20,9 @@ class FakeNetworkManagerBackend(QObject):
 
     tunnel_state_received = Signal(object)
     state_query_failed = Signal(str)
-    tunnel_connected = Signal(str)
+    connect_completed = Signal(str)
     connect_failed = Signal(str)
-    tunnel_disconnected = Signal(str)
+    disconnect_completed = Signal(str)
     disconnect_failed = Signal(str)
 
     def __init__(self) -> None:
@@ -61,12 +61,12 @@ class FakeNetworkManagerBackend(QObject):
     def complete_connect(self, connection_uuid: str) -> None:
         """Complete a simulated connect command."""
         self._is_busy = False
-        self.tunnel_connected.emit(connection_uuid)
+        self.connect_completed.emit(connection_uuid)
 
     def complete_disconnect(self, connection_uuid: str) -> None:
         """Complete a simulated disconnect command."""
         self._is_busy = False
-        self.tunnel_disconnected.emit(connection_uuid)
+        self.disconnect_completed.emit(connection_uuid)
 
     def fail_state_query(self, message: str) -> None:
         """Fail a simulated state query."""

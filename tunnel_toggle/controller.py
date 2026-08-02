@@ -58,9 +58,9 @@ class ApplicationController(QObject):
 
         self._backend.tunnel_state_received.connect(self._handle_tunnel_state)
         self._backend.state_query_failed.connect(self._handle_backend_failure)
-        self._backend.tunnel_connected.connect(self._handle_control_success)
+        self._backend.connect_completed.connect(self._handle_control_success)
         self._backend.connect_failed.connect(self._handle_backend_failure)
-        self._backend.tunnel_disconnected.connect(self._handle_control_success)
+        self._backend.disconnect_completed.connect(self._handle_control_success)
         self._backend.disconnect_failed.connect(self._handle_backend_failure)
         self._monitor.network_activity_detected.connect(self.refresh_state)
 

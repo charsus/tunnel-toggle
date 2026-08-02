@@ -343,7 +343,7 @@ def test_async_connect_emits_target_uuid(
     )
 
     with qtbot.waitSignal(
-        backend.tunnel_connected,
+        backend.connect_completed,
         timeout=1_000,
     ) as blocker:
         backend.connect_tunnel(TARGET_UUID)
@@ -368,7 +368,7 @@ def test_async_disconnect_emits_target_uuid(
     )
 
     with qtbot.waitSignal(
-        backend.tunnel_disconnected,
+        backend.disconnect_completed,
         timeout=1_000,
     ) as blocker:
         backend.disconnect_tunnel(TARGET_UUID)

@@ -225,9 +225,9 @@ class NetworkManagerBackend(QObject):
     discovery_failed = Signal(str)
     tunnel_state_received = Signal(object)
     state_query_failed = Signal(str)
-    tunnel_connected = Signal(str)
+    connect_completed = Signal(str)
     connect_failed = Signal(str)
-    tunnel_disconnected = Signal(str)
+    disconnect_completed = Signal(str)
     disconnect_failed = Signal(str)
 
     def __init__(
@@ -456,10 +456,10 @@ class NetworkManagerBackend(QObject):
         self._cleanup_process()
 
         if operation is _Operation.CONNECT:
-            self.tunnel_connected.emit(target_uuid)
+            self.connect_completed.emit(target_uuid)
             return
 
-        self.tunnel_disconnected.emit(target_uuid)
+        self.disconnect_completed.emit(target_uuid)
 
     def _finish_failure(self, message: str) -> None:
         """Clean up and emit a normalized operation failure."""
