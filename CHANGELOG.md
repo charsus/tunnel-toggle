@@ -12,3 +12,4 @@ All notable changes to Tunnel Toggle will be documented in this file.
 - Initial project quality-check script
 - Architecture, security, and project documentation
 - Typed domain models for application state
+- Validated QSettings schema and typed settings repository
