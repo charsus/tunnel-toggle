@@ -30,7 +30,7 @@ def test_tray_builds_status_toggle_separator_and_quit_actions(
     """The menu should expose presentation-only shell actions."""
     actions = tray_shell.menu.actions()
 
-    assert len(actions) == 4
+    assert len(actions) == 5
     assert actions[0] is tray_shell.status_action
     assert actions[0].text() == (f"Status: {INITIAL_STATUS}")
     assert actions[0].isEnabled() is False
@@ -39,11 +39,15 @@ def test_tray_builds_status_toggle_separator_and_quit_actions(
     assert actions[1].text() == INITIAL_TOGGLE_TEXT
     assert actions[1].isEnabled() is False
 
-    assert actions[2].isSeparator() is True
+    assert actions[2] is tray_shell.configure_action
+    assert actions[2].text() == "Configure…"
+    assert actions[2].isVisible() is False
 
-    assert actions[3] is tray_shell.quit_action
-    assert actions[3].text() == "Quit"
-    assert actions[3].isEnabled() is True
+    assert actions[3].isSeparator() is True
+
+    assert actions[4] is tray_shell.quit_action
+    assert actions[4].text() == "Quit"
+    assert actions[4].isEnabled() is True
 
 
 def test_initial_tooltip_identifies_application(
@@ -125,3 +129,31 @@ def test_quit_action_emits_simple_signal(
         timeout=1_000,
     ):
         tray_shell.quit_action.trigger()
+
+
+def test_configure_visibility_can_be_updated(
+    tray_shell: TrayShell,
+) -> None:
+    """The presenter should control setup action visibility."""
+    tray_shell.set_configure_visible(True)
+
+    assert tray_shell.configure_action.isVisible() is True
+    assert tray_shell.configure_action.isEnabled() is True
+
+    tray_shell.set_configure_visible(False)
+
+    assert tray_shell.configure_action.isVisible() is False
+
+
+def test_configure_action_emits_simple_signal(
+    qtbot: QtBot,
+    tray_shell: TrayShell,
+) -> None:
+    """Configure should expose a parameterless application signal."""
+    tray_shell.set_configure_visible(True)
+
+    with qtbot.waitSignal(
+        tray_shell.configure_requested,
+        timeout=1_000,
+    ):
+        tray_shell.configure_action.trigger()

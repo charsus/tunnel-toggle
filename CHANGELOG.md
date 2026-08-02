@@ -27,3 +27,4 @@ All notable changes to Tunnel Toggle will be documented in this file.
 - Safe loading of the selected NetworkManager connection from typed settings
 - Connection setup coordination with validated UUID persistence
 - Presentation-only connection setup dialog with asynchronous profile refresh
+- Runtime tray setup integration with immediate controller reconfiguration

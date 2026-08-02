@@ -19,6 +19,16 @@ from tunnel_toggle.tray import TrayShell
 TARGET_UUID = "44444444-4444-4444-4444-444444444444"
 
 
+class FakeSettingsRepository:
+    """Minimal runtime settings repository test double."""
+
+    def __init__(self) -> None:
+        self.saved_settings: list[AppSettings] = []
+
+    def save(self, settings: AppSettings) -> None:
+        self.saved_settings.append(settings)
+
+
 def install_lifecycle_spies(
     monkeypatch: MonkeyPatch,
 ) -> tuple[list[str], list[str]]:
@@ -91,11 +101,20 @@ def create_runtime(
     *,
     connection_uuid: str | None = None,
 ) -> ApplicationRuntime:
-    """Create a runtime and register its menu for test cleanup."""
+    """Create a runtime with isolated settings storage."""
+    settings = AppSettings(
+        setup_completed=connection_uuid is not None,
+        network=NetworkSettings(
+            connection_uuid=connection_uuid,
+        ),
+    )
+    repository = FakeSettingsRepository()
     runtime = ApplicationRuntime(
-        connection_uuid=connection_uuid,
+        settings=settings,
+        repository=repository,  # type: ignore[arg-type]
     )
     qtbot.addWidget(runtime.tray.menu)
+    qtbot.addWidget(runtime.setup_dialog)
     return runtime
 
 
@@ -262,7 +281,11 @@ def test_runtime_factory_uses_completed_setup(
         ),
     )
 
-    runtime = create_application_runtime(settings=settings)
+    repository = FakeSettingsRepository()
+    runtime = create_application_runtime(
+        settings=settings,
+        repository=repository,  # type: ignore[arg-type]
+    )
     qtbot.addWidget(runtime.tray.menu)
 
     assert runtime.controller.connection_uuid == TARGET_UUID
@@ -280,9 +303,92 @@ def test_runtime_factory_keeps_incomplete_setup_unconfigured(
         ),
     )
 
-    runtime = create_application_runtime(settings=settings)
+    repository = FakeSettingsRepository()
+    runtime = create_application_runtime(
+        settings=settings,
+        repository=repository,  # type: ignore[arg-type]
+    )
     qtbot.addWidget(runtime.tray.menu)
 
     assert runtime.controller.connection_uuid is None
     assert runtime.controller.state.network.state is (TunnelState.UNCONFIGURED)
     assert runtime.tray.status_action.text() == ("Status: Not configured")
+
+
+def test_unconfigured_runtime_exposes_configure_action(
+    qtbot: QtBot,
+) -> None:
+    """Initial setup should be available from the tray."""
+    runtime = create_runtime(qtbot)
+
+    assert runtime.tray.configure_action.isVisible() is True
+    assert runtime.tray.configure_action.isEnabled() is True
+
+
+def test_configure_request_shows_reusable_dialog(
+    qtbot: QtBot,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Repeated requests should use one existing dialog."""
+    runtime = create_runtime(qtbot)
+    shown_dialogs: list[object] = []
+
+    monkeypatch.setattr(
+        runtime.setup_dialog,
+        "show",
+        lambda: shown_dialogs.append(runtime.setup_dialog),
+    )
+    monkeypatch.setattr(
+        runtime.setup_dialog,
+        "isVisible",
+        lambda: False,
+    )
+    monkeypatch.setattr(
+        runtime.setup_dialog,
+        "raise_",
+        lambda: None,
+    )
+    monkeypatch.setattr(
+        runtime.setup_dialog,
+        "activateWindow",
+        lambda: None,
+    )
+
+    runtime.presenter.configure_requested.emit()
+    runtime.presenter.configure_requested.emit()
+
+    assert shown_dialogs == [
+        runtime.setup_dialog,
+        runtime.setup_dialog,
+    ]
+    assert runtime.setup_dialog is runtime.setup_dialog
+
+
+def test_saved_setup_updates_running_controller(
+    qtbot: QtBot,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """A saved UUID should immediately trigger canonical state."""
+    lifecycle_calls, state_queries = install_lifecycle_spies(monkeypatch)
+    runtime = create_runtime(qtbot)
+    runtime.start()
+
+    updated_settings = AppSettings(
+        setup_completed=True,
+        network=NetworkSettings(
+            connection_uuid=TARGET_UUID,
+        ),
+    )
+
+    runtime.setup_dialog.settings_saved.emit(updated_settings)
+
+    assert runtime.settings == updated_settings
+    assert runtime.controller.connection_uuid == TARGET_UUID
+    assert state_queries == [TARGET_UUID]
+    assert runtime.tray.configure_action.isVisible() is False
+    assert lifecycle_calls == [
+        "monitor.start",
+        "tray.show",
+    ]
+
+    runtime.stop()

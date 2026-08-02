@@ -101,6 +101,7 @@ def create_presenter(
                 toggle_text="Connect",
                 toggle_enabled=False,
                 toggle_operation=None,
+                configure_visible=True,
             ),
         ),
         (
@@ -110,6 +111,7 @@ def create_presenter(
                 toggle_text="Connect",
                 toggle_enabled=False,
                 toggle_operation=None,
+                configure_visible=False,
             ),
         ),
         (
@@ -119,6 +121,7 @@ def create_presenter(
                 toggle_text="Connect",
                 toggle_enabled=True,
                 toggle_operation=ToggleOperation.CONNECT,
+                configure_visible=False,
             ),
         ),
         (
@@ -128,6 +131,7 @@ def create_presenter(
                 toggle_text="Connect",
                 toggle_enabled=False,
                 toggle_operation=None,
+                configure_visible=False,
             ),
         ),
         (
@@ -137,6 +141,7 @@ def create_presenter(
                 toggle_text="Disconnect",
                 toggle_enabled=True,
                 toggle_operation=ToggleOperation.DISCONNECT,
+                configure_visible=False,
             ),
         ),
         (
@@ -146,6 +151,7 @@ def create_presenter(
                 toggle_text="Disconnect",
                 toggle_enabled=False,
                 toggle_operation=None,
+                configure_visible=False,
             ),
         ),
         (
@@ -155,6 +161,7 @@ def create_presenter(
                 toggle_text="Unavailable",
                 toggle_enabled=False,
                 toggle_operation=None,
+                configure_visible=False,
             ),
         ),
     ],
@@ -256,3 +263,35 @@ def test_non_actionable_state_ignores_toggle_signal(
     assert presenter is not None
     assert controller.connect_requests == 0
     assert controller.disconnect_requests == 0
+
+
+def test_unconfigured_configure_request_is_forwarded(
+    qtbot: QtBot,
+) -> None:
+    """Setup should be available only in the unconfigured view."""
+    presenter, _, tray = create_presenter(
+        qtbot,
+        TunnelState.UNCONFIGURED,
+    )
+
+    with qtbot.waitSignal(
+        presenter.configure_requested,
+        timeout=1_000,
+    ):
+        tray.configure_requested.emit()
+
+
+def test_configure_request_is_ignored_when_configured(
+    qtbot: QtBot,
+) -> None:
+    """Hidden setup actions should remain safe if signalled."""
+    presenter, _, tray = create_presenter(
+        qtbot,
+        TunnelState.DISCONNECTED,
+    )
+    requests: list[str] = []
+
+    presenter.configure_requested.connect(lambda: requests.append("configure"))
+    tray.configure_requested.emit()
+
+    assert requests == []

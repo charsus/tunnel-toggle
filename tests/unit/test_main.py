@@ -24,6 +24,13 @@ from tunnel_toggle.settings import (
 )
 
 
+class FakeSettingsRepository:
+    """Settings repository identity used by entry-point tests."""
+
+    def save(self, settings: AppSettings) -> None:
+        del settings
+
+
 class FakeApplicationRuntime(QObject):
     """Controllable runtime test double for the entry point."""
 
@@ -86,8 +93,9 @@ def test_smoke_test_does_not_load_permanent_services(
     def fail_runtime_creation(
         *,
         settings: AppSettings,
+        repository: object,
     ) -> FakeApplicationRuntime:
-        del settings
+        del settings, repository
         raise AssertionError("Smoke mode constructed the application runtime.")
 
     monkeypatch.setattr(
@@ -125,19 +133,23 @@ def test_normal_start_loads_settings_and_runs_runtime(
             connection_uuid=("44444444-4444-4444-4444-444444444444"),
         ),
     )
+    repository = FakeSettingsRepository()
     received_settings: list[AppSettings] = []
+    received_repositories: list[object] = []
 
     monkeypatch.setattr(
         main_module,
         "_load_application_settings",
-        lambda: settings,
+        lambda: (repository, settings),
     )
 
     def create_runtime(
         *,
         settings: AppSettings,
+        repository: object,
     ) -> FakeApplicationRuntime:
         received_settings.append(settings)
+        received_repositories.append(repository)
         return runtime
 
     monkeypatch.setattr(
@@ -155,6 +167,7 @@ def test_normal_start_loads_settings_and_runs_runtime(
 
     assert exit_code == 23
     assert received_settings == [settings]
+    assert received_repositories == [repository]
     assert runtime.start_count == 1
     assert runtime.stop_count == 1
 
@@ -181,8 +194,9 @@ def test_settings_failure_prevents_runtime_start(
     def fail_runtime_creation(
         *,
         settings: AppSettings,
+        repository: object,
     ) -> FakeApplicationRuntime:
-        del settings
+        del settings, repository
         raise AssertionError("Runtime was created after settings failed.")
 
     monkeypatch.setattr(

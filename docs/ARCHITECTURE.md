@@ -60,6 +60,22 @@ are outside the initial project scope.
 Modules will be added only when their implementation milestone begins. Empty
 placeholder modules should be avoided.
 
+## Runtime setup integration
+
+The runtime owns one dedicated setup discovery backend, setup controller, and
+reusable setup dialog.
+
+The tray presenter exposes Configure only while the main controller is
+unconfigured. Repeated requests raise the same dialog rather than constructing
+duplicates.
+
+After settings are persisted successfully, the runtime applies the selected
+UUID to the running application controller. The controller then performs its
+normal canonical NetworkManager state query.
+
+Setup discovery uses a backend separate from tunnel state and control
+operations.
+
 ## Connection setup dialog
 
 The connection setup dialog is a presentation-only Qt view over

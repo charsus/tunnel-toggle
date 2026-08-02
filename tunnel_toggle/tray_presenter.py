@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-from PySide6.QtCore import QObject, Slot
+from PySide6.QtCore import QObject, Signal, Slot
 
 from tunnel_toggle.controller import ApplicationController
 from tunnel_toggle.models import ApplicationState, TunnelState
@@ -27,6 +27,7 @@ class TrayViewState:
     toggle_text: str
     toggle_enabled: bool
     toggle_operation: ToggleOperation | None
+    configure_visible: bool
 
 
 def tray_view_for(
@@ -39,6 +40,7 @@ def tray_view_for(
             toggle_text="Connect",
             toggle_enabled=False,
             toggle_operation=None,
+            configure_visible=True,
         )
 
     if tunnel_state is TunnelState.UNKNOWN:
@@ -47,6 +49,7 @@ def tray_view_for(
             toggle_text="Connect",
             toggle_enabled=False,
             toggle_operation=None,
+            configure_visible=False,
         )
 
     if tunnel_state is TunnelState.DISCONNECTED:
@@ -55,6 +58,7 @@ def tray_view_for(
             toggle_text="Connect",
             toggle_enabled=True,
             toggle_operation=ToggleOperation.CONNECT,
+            configure_visible=False,
         )
 
     if tunnel_state is TunnelState.CONNECTING:
@@ -63,6 +67,7 @@ def tray_view_for(
             toggle_text="Connect",
             toggle_enabled=False,
             toggle_operation=None,
+            configure_visible=False,
         )
 
     if tunnel_state is TunnelState.CONNECTED:
@@ -71,6 +76,7 @@ def tray_view_for(
             toggle_text="Disconnect",
             toggle_enabled=True,
             toggle_operation=ToggleOperation.DISCONNECT,
+            configure_visible=False,
         )
 
     if tunnel_state is TunnelState.DISCONNECTING:
@@ -79,6 +85,7 @@ def tray_view_for(
             toggle_text="Disconnect",
             toggle_enabled=False,
             toggle_operation=None,
+            configure_visible=False,
         )
 
     return TrayViewState(
@@ -86,11 +93,14 @@ def tray_view_for(
         toggle_text="Unavailable",
         toggle_enabled=False,
         toggle_operation=None,
+        configure_visible=False,
     )
 
 
 class TrayPresenter(QObject):
     """Apply controller state to the tray and route user actions."""
+
+    configure_requested = Signal()
 
     def __init__(
         self,
@@ -105,9 +115,11 @@ class TrayPresenter(QObject):
         self._controller = controller
         self._tray = tray
         self._toggle_operation: ToggleOperation | None = None
+        self._configure_available = False
 
         self._controller.state_changed.connect(self._handle_state_changed)
         self._tray.toggle_requested.connect(self._handle_toggle_requested)
+        self._tray.configure_requested.connect(self._handle_configure_requested)
 
         self._apply_state(self._controller.state)
 
@@ -129,13 +141,22 @@ class TrayPresenter(QObject):
         if self._toggle_operation is ToggleOperation.DISCONNECT:
             self._controller.request_disconnect()
 
+    @Slot()
+    def _handle_configure_requested(self) -> None:
+        """Forward setup only when the current view permits it."""
+        if self._configure_available:
+            self.configure_requested.emit()
+
     def _apply_state(self, state: ApplicationState) -> None:
         """Render one complete controller state."""
         view_state = tray_view_for(state.network.state)
+
         self._toggle_operation = view_state.toggle_operation
+        self._configure_available = view_state.configure_visible
 
         self._tray.set_status(view_state.status)
         self._tray.set_toggle(
             text=view_state.toggle_text,
             enabled=view_state.toggle_enabled,
         )
+        self._tray.set_configure_visible(view_state.configure_visible)

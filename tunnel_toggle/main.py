@@ -75,9 +75,10 @@ def main(
             return 0
 
         try:
-            settings = _load_application_settings()
+            repository, settings = _load_application_settings()
             runtime = create_application_runtime(
                 settings=settings,
+                repository=repository,
             )
         except (SettingsError, ValueError) as error:
             print(str(error), file=sys.stderr)
@@ -107,9 +108,10 @@ def main(
         instance_lock.release()
 
 
-def _load_application_settings() -> AppSettings:
-    """Load validated per-user settings for normal startup."""
-    return SettingsRepository.create_default().load()
+def _load_application_settings() -> tuple[SettingsRepository, AppSettings]:
+    """Load one repository and its validated settings."""
+    repository = SettingsRepository.create_default()
+    return repository, repository.load()
 
 
 def _execute_application(

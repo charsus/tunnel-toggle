@@ -22,6 +22,7 @@ class TrayShell(QObject):
     """Own the persistent tray icon and its context menu."""
 
     toggle_requested = Signal()
+    configure_requested = Signal()
     quit_requested = Signal()
 
     def __init__(
@@ -44,11 +45,19 @@ class TrayShell(QObject):
         self._toggle_action.setEnabled(False)
         self._toggle_action.triggered.connect(self._handle_toggle_triggered)
 
+        self._configure_action = QAction(
+            "Configure…",
+            self._menu,
+        )
+        self._configure_action.setVisible(False)
+        self._configure_action.triggered.connect(self._handle_configure_triggered)
+
         self._quit_action = QAction("Quit", self._menu)
         self._quit_action.triggered.connect(self._handle_quit_triggered)
 
         self._menu.addAction(self._status_action)
         self._menu.addAction(self._toggle_action)
+        self._menu.addAction(self._configure_action)
         self._menu.addSeparator()
         self._menu.addAction(self._quit_action)
 
@@ -72,6 +81,11 @@ class TrayShell(QObject):
     def toggle_action(self) -> QAction:
         """Return the connection toggle action."""
         return self._toggle_action
+
+    @property
+    def configure_action(self) -> QAction:
+        """Return the initial-setup action."""
+        return self._configure_action
 
     @property
     def quit_action(self) -> QAction:
@@ -113,6 +127,11 @@ class TrayShell(QObject):
         self._toggle_action.setText(normalized_text)
         self._toggle_action.setEnabled(enabled)
 
+    def set_configure_visible(self, visible: bool) -> None:
+        """Show Configure only when setup is required."""
+        self._configure_action.setVisible(visible)
+        self._configure_action.setEnabled(visible)
+
     def show(self) -> None:
         """Make the tray entry visible."""
         self._tray_icon.show()
@@ -123,13 +142,22 @@ class TrayShell(QObject):
 
     @Slot(bool)
     def _handle_toggle_triggered(self, checked: bool) -> None:
-        """Translate QAction's checked value into a simple signal."""
+        """Translate QAction's checked argument into a simple signal."""
         del checked
         self.toggle_requested.emit()
 
     @Slot(bool)
+    def _handle_configure_triggered(
+        self,
+        checked: bool,
+    ) -> None:
+        """Translate Configure into a parameterless signal."""
+        del checked
+        self.configure_requested.emit()
+
+    @Slot(bool)
     def _handle_quit_triggered(self, checked: bool) -> None:
-        """Translate QAction's checked value into a simple signal."""
+        """Translate QAction's checked argument into a simple signal."""
         del checked
         self.quit_requested.emit()
 

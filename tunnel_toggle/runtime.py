@@ -7,7 +7,9 @@ from PySide6.QtCore import QObject, Signal, Slot
 from tunnel_toggle.controller import ApplicationController
 from tunnel_toggle.network_manager import NetworkManagerBackend
 from tunnel_toggle.network_monitor import NetworkManagerMonitor
-from tunnel_toggle.settings import AppSettings
+from tunnel_toggle.settings import AppSettings, SettingsRepository
+from tunnel_toggle.setup_controller import ConnectionSetupController
+from tunnel_toggle.setup_dialog import ConnectionSetupDialog
 from tunnel_toggle.tray import TrayShell
 from tunnel_toggle.tray_presenter import TrayPresenter
 
@@ -20,33 +22,71 @@ class ApplicationRuntime(QObject):
     def __init__(
         self,
         *,
-        connection_uuid: str | None = None,
+        settings: AppSettings,
+        repository: SettingsRepository,
         parent: QObject | None = None,
     ) -> None:
         """Construct all runtime services without starting them."""
         super().__init__(parent)
 
-        self._backend = NetworkManagerBackend(parent=self)
-        self._monitor = NetworkManagerMonitor(parent=self)
+        self._settings = settings
+        self._repository = repository
+
+        self._backend = NetworkManagerBackend(
+            timeout_ms=settings.network.command_timeout_ms,
+            parent=self,
+        )
+        self._monitor = NetworkManagerMonitor(
+            restart_delay_ms=(settings.network.monitor_restart_delay_ms),
+            parent=self,
+        )
         self._controller = ApplicationController(
             backend=self._backend,
             monitor=self._monitor,
-            connection_uuid=connection_uuid,
+            connection_uuid=selected_connection_uuid(settings),
             parent=self,
         )
+
         self._tray = TrayShell(parent=self)
         self._presenter = TrayPresenter(
             controller=self._controller,
             tray=self._tray,
             parent=self,
         )
+
+        self._setup_backend = NetworkManagerBackend(
+            timeout_ms=settings.network.command_timeout_ms,
+            parent=self,
+        )
+        self._setup_controller = ConnectionSetupController(
+            backend=self._setup_backend,
+            repository=repository,
+            settings=settings,
+            parent=self,
+        )
+        self._setup_dialog = ConnectionSetupDialog(
+            controller=self._setup_controller,
+        )
+
         self._started = False
 
         self._tray.quit_requested.connect(self._handle_quit_requested)
+        self._presenter.configure_requested.connect(self._show_setup_dialog)
+        self._setup_dialog.settings_saved.connect(self._handle_settings_saved)
+
+    @property
+    def settings(self) -> AppSettings:
+        """Return the latest successfully saved settings."""
+        return self._settings
+
+    @property
+    def repository(self) -> SettingsRepository:
+        """Return the runtime settings repository."""
+        return self._repository
 
     @property
     def backend(self) -> NetworkManagerBackend:
-        """Return the composed NetworkManager backend."""
+        """Return the primary NetworkManager backend."""
         return self._backend
 
     @property
@@ -70,6 +110,21 @@ class ApplicationRuntime(QObject):
         return self._presenter
 
     @property
+    def setup_backend(self) -> NetworkManagerBackend:
+        """Return the dedicated setup discovery backend."""
+        return self._setup_backend
+
+    @property
+    def setup_controller(self) -> ConnectionSetupController:
+        """Return the connection setup controller."""
+        return self._setup_controller
+
+    @property
+    def setup_dialog(self) -> ConnectionSetupDialog:
+        """Return the reusable setup dialog."""
+        return self._setup_dialog
+
+    @property
     def is_started(self) -> bool:
         """Return whether the runtime is currently active."""
         return self._started
@@ -90,7 +145,9 @@ class ApplicationRuntime(QObject):
         self._started = True
 
     def stop(self) -> None:
-        """Hide the tray and stop services exactly once."""
+        """Hide presentation and stop services safely."""
+        self._setup_dialog.hide()
+
         if not self._started:
             return
 
@@ -106,6 +163,24 @@ class ApplicationRuntime(QObject):
         """Forward the tray's quit request to the application."""
         self.quit_requested.emit()
 
+    @Slot()
+    def _show_setup_dialog(self) -> None:
+        """Show or raise the one reusable setup dialog."""
+        if not self._setup_dialog.isVisible():
+            self._setup_dialog.show()
+
+        self._setup_dialog.raise_()
+        self._setup_dialog.activateWindow()
+
+    @Slot(object)
+    def _handle_settings_saved(self, settings: object) -> None:
+        """Apply a newly persisted setup to the running controller."""
+        if not isinstance(settings, AppSettings):
+            raise TypeError("Connection setup emitted invalid settings.")
+
+        self._settings = settings
+        self._controller.set_connection_uuid(selected_connection_uuid(settings))
+
 
 def selected_connection_uuid(
     settings: AppSettings,
@@ -120,10 +195,12 @@ def selected_connection_uuid(
 def create_application_runtime(
     *,
     settings: AppSettings,
+    repository: SettingsRepository,
     parent: QObject | None = None,
 ) -> ApplicationRuntime:
     """Create the production runtime from validated settings."""
     return ApplicationRuntime(
-        connection_uuid=selected_connection_uuid(settings),
+        settings=settings,
+        repository=repository,
         parent=parent,
     )
