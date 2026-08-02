@@ -28,3 +28,4 @@ All notable changes to Tunnel Toggle will be documented in this file.
 - Connection setup coordination with validated UUID persistence
 - Presentation-only connection setup dialog with asynchronous profile refresh
 - Runtime tray setup integration with immediate controller reconfiguration
+- Freedesktop desktop entry and AppStream application metadata

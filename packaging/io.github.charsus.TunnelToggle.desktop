@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Tunnel Toggle
+GenericName=Network Tunnel Controller
+Comment=Control a NetworkManager VPN or WireGuard connection from the system tray
+Exec=tunnel-toggle
+TryExec=tunnel-toggle
+Icon=network-vpn
+Terminal=false
+Categories=Network;
+Keywords=VPN;WireGuard;NetworkManager;Tunnel;
+OnlyShowIn=KDE;
+StartupNotify=false

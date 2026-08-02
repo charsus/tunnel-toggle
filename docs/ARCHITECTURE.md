@@ -60,6 +60,21 @@ are outside the initial project scope.
 Modules will be added only when their implementation milestone begins. Empty
 placeholder modules should be avoided.
 
+## Freedesktop application metadata
+
+Tunnel Toggle uses `io.github.charsus.TunnelToggle` as its stable desktop and
+AppStream application identity.
+
+The desktop launcher starts the installed `tunnel-toggle` entry point, uses the
+desktop theme's `network-vpn` icon, and is scoped to KDE sessions.
+
+AppStream metadata uses the same application identity and explicitly describes
+the boundary between NetworkManager profile control and stronger protections
+such as kill switches, application binding, or leak prevention.
+
+Desktop metadata is maintained as packaging source data and is installed by a
+separate explicit installer rather than setuptools `data-files`.
+
 ## Runtime setup integration
 
 The runtime owns one dedicated setup discovery backend, setup controller, and
