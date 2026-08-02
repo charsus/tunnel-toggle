@@ -60,6 +60,22 @@ are outside the initial project scope.
 Modules will be added only when their implementation milestone begins. Empty
 placeholder modules should be avoided.
 
+## Connection setup dialog
+
+The connection setup dialog is a presentation-only Qt view over
+`ConnectionSetupController`.
+
+It displays loading, ready, empty, and error states; stores profile UUIDs as
+combo-box item data; and forwards Refresh, selection, and Save requests to the
+controller.
+
+Profile names and connection types are display values only. Profile identity
+always uses the NetworkManager UUID.
+
+The dialog closes with an accepted result only after the controller emits a
+successful settings-save result. It does not access NetworkManager or raw
+`QSettings` keys.
+
 ## Connection setup controller
 
 Connection setup is coordinated outside the future dialog.
