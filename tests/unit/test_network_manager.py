@@ -4,6 +4,8 @@ import pytest
 
 from tunnel_toggle.network_manager import (
     NetworkManagerParseError,
+    connect_arguments,
+    disconnect_arguments,
     discovery_arguments,
     parse_active_connection_uuids,
     parse_connection_profiles,
@@ -181,3 +183,42 @@ def test_parse_active_connection_uuids_rejects_malformed_output(
     """Malformed active-state output should fail explicitly."""
     with pytest.raises(NetworkManagerParseError, match="line 1"):
         parse_active_connection_uuids(output)
+
+
+def test_connect_arguments_use_normalized_uuid() -> None:
+    """Connect commands should identify profiles explicitly by UUID."""
+    arguments = connect_arguments("AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")
+
+    assert arguments == (
+        "connection",
+        "up",
+        "uuid",
+        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    )
+
+
+def test_disconnect_arguments_use_normalized_uuid() -> None:
+    """Disconnect commands should identify profiles explicitly by UUID."""
+    arguments = disconnect_arguments("AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")
+
+    assert arguments == (
+        "connection",
+        "down",
+        "uuid",
+        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    )
+
+
+@pytest.mark.parametrize(
+    "argument_builder",
+    [
+        connect_arguments,
+        disconnect_arguments,
+    ],
+)
+def test_control_arguments_reject_invalid_uuid(
+    argument_builder: object,
+) -> None:
+    """Control command builders should reject invalid UUIDs."""
+    with pytest.raises(ValueError, match="valid UUID"):
+        argument_builder("not-a-uuid")  # type: ignore[operator]

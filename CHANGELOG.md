@@ -17,3 +17,4 @@ All notable changes to Tunnel Toggle will be documented in this file.
 - NetworkManager VPN and WireGuard profile parsing
 - Asynchronous NetworkManager connection discovery
 - Read-only NetworkManager active tunnel-state queries
+- Asynchronous NetworkManager connect and disconnect commands

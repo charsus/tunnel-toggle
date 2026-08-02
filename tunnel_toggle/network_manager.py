@@ -177,11 +177,45 @@ def parse_active_connection_uuids(output: str) -> frozenset[str]:
     return frozenset(active_uuids)
 
 
+def connect_arguments(connection_uuid: str) -> tuple[str, ...]:
+    """Return arguments that activate a connection by UUID."""
+    normalized_uuid = _normalize_connection_uuid(connection_uuid)
+
+    return (
+        "connection",
+        "up",
+        "uuid",
+        normalized_uuid,
+    )
+
+
+def disconnect_arguments(connection_uuid: str) -> tuple[str, ...]:
+    """Return arguments that deactivate a connection by UUID."""
+    normalized_uuid = _normalize_connection_uuid(connection_uuid)
+
+    return (
+        "connection",
+        "down",
+        "uuid",
+        normalized_uuid,
+    )
+
+
+def _normalize_connection_uuid(connection_uuid: str) -> str:
+    """Validate and normalize a NetworkManager connection UUID."""
+    try:
+        return str(UUID(connection_uuid.strip()))
+    except ValueError as error:
+        raise ValueError("connection_uuid must be a valid UUID.") from error
+
+
 class _Operation(StrEnum):
     """Asynchronous NetworkManager operations."""
 
     DISCOVERY = "discovery"
     STATE_QUERY = "state_query"
+    CONNECT = "connect"
+    DISCONNECT = "disconnect"
 
 
 class NetworkManagerBackend(QObject):
@@ -191,6 +225,10 @@ class NetworkManagerBackend(QObject):
     discovery_failed = Signal(str)
     tunnel_state_received = Signal(object)
     state_query_failed = Signal(str)
+    tunnel_connected = Signal(str)
+    connect_failed = Signal(str)
+    tunnel_disconnected = Signal(str)
+    disconnect_failed = Signal(str)
 
     def __init__(
         self,
@@ -234,14 +272,31 @@ class NetworkManagerBackend(QObject):
 
     def query_tunnel_state(self, connection_uuid: str) -> None:
         """Query whether NetworkManager reports a UUID as active."""
-        try:
-            normalized_uuid = str(UUID(connection_uuid.strip()))
-        except ValueError as error:
-            raise ValueError("connection_uuid must be a valid UUID.") from error
+        normalized_uuid = _normalize_connection_uuid(connection_uuid)
 
         self._start_operation(
             operation=_Operation.STATE_QUERY,
             arguments=state_query_arguments(),
+            target_uuid=normalized_uuid,
+        )
+
+    def connect_tunnel(self, connection_uuid: str) -> None:
+        """Request activation of a NetworkManager connection."""
+        normalized_uuid = _normalize_connection_uuid(connection_uuid)
+
+        self._start_operation(
+            operation=_Operation.CONNECT,
+            arguments=connect_arguments(normalized_uuid),
+            target_uuid=normalized_uuid,
+        )
+
+    def disconnect_tunnel(self, connection_uuid: str) -> None:
+        """Request deactivation of a NetworkManager connection."""
+        normalized_uuid = _normalize_connection_uuid(connection_uuid)
+
+        self._start_operation(
+            operation=_Operation.DISCONNECT,
+            arguments=disconnect_arguments(normalized_uuid),
             target_uuid=normalized_uuid,
         )
 
@@ -335,6 +390,13 @@ class NetworkManagerBackend(QObject):
             )
             return
 
+        if operation in {
+            _Operation.CONNECT,
+            _Operation.DISCONNECT,
+        }:
+            self._complete_control(operation)
+            return
+
         output = bytes(process.readAllStandardOutput().data()).decode(
             "utf-8", errors="replace"
         )
@@ -383,6 +445,22 @@ class NetworkManagerBackend(QObject):
         self._cleanup_process()
         self.tunnel_state_received.emit(status)
 
+    def _complete_control(self, operation: _Operation) -> None:
+        """Emit completion of a connect or disconnect command."""
+        target_uuid = self._target_uuid
+
+        if target_uuid is None:
+            self._finish_failure("NetworkManager control operation had no target UUID.")
+            return
+
+        self._cleanup_process()
+
+        if operation is _Operation.CONNECT:
+            self.tunnel_connected.emit(target_uuid)
+            return
+
+        self.tunnel_disconnected.emit(target_uuid)
+
     def _finish_failure(self, message: str) -> None:
         """Clean up and emit a normalized operation failure."""
         operation = self._operation
@@ -401,14 +479,28 @@ class NetworkManagerBackend(QObject):
             self.discovery_failed.emit(message)
             return
 
-        self.state_query_failed.emit(message)
+        if operation is _Operation.STATE_QUERY:
+            self.state_query_failed.emit(message)
+            return
+
+        if operation is _Operation.CONNECT:
+            self.connect_failed.emit(message)
+            return
+
+        self.disconnect_failed.emit(message)
 
     def _operation_label(self, operation: _Operation) -> str:
         """Return a stable human-readable operation label."""
         if operation is _Operation.DISCOVERY:
             return "NetworkManager discovery"
 
-        return "NetworkManager state query"
+        if operation is _Operation.STATE_QUERY:
+            return "NetworkManager state query"
+
+        if operation is _Operation.CONNECT:
+            return "NetworkManager connect request"
+
+        return "NetworkManager disconnect request"
 
     def _cleanup_process(self) -> None:
         """Release the process and reset operation state."""

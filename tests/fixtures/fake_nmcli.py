@@ -30,6 +30,20 @@ STATE_QUERY_ARGUMENTS = [
 
 TARGET_UUID = "44444444-4444-4444-4444-444444444444"
 
+CONNECT_ARGUMENTS = [
+    "connection",
+    "up",
+    "uuid",
+    TARGET_UUID,
+]
+
+DISCONNECT_ARGUMENTS = [
+    "connection",
+    "down",
+    "uuid",
+    TARGET_UUID,
+]
+
 
 def main() -> int:
     """Return deterministic output for the requested test mode."""
@@ -39,6 +53,10 @@ def main() -> int:
         operation = "discovery"
     elif arguments == STATE_QUERY_ARGUMENTS:
         operation = "state"
+    elif arguments == CONNECT_ARGUMENTS:
+        operation = "connect"
+    elif arguments == DISCONNECT_ARGUMENTS:
+        operation = "disconnect"
     else:
         print("Unexpected arguments.", file=sys.stderr)
         return 64
@@ -67,7 +85,13 @@ def main() -> int:
     if operation == "discovery":
         return run_discovery(mode)
 
-    return run_state_query(mode)
+    if operation == "state":
+        return run_state_query(mode)
+
+    if operation == "connect":
+        return run_connect(mode)
+
+    return run_disconnect(mode)
 
 
 def run_discovery(mode: str) -> int:
@@ -114,6 +138,34 @@ def run_state_query(mode: str) -> int:
 
     print("Unknown state-query mode.", file=sys.stderr)
     return 69
+
+
+def run_connect(mode: str) -> int:
+    """Simulate a NetworkManager connection activation."""
+    if mode == "connect_success":
+        print("Connection activated.")
+        return 0
+
+    if mode == "connect_failure":
+        print("password=do-not-leak", file=sys.stderr)
+        return 10
+
+    print("Unknown connect mode.", file=sys.stderr)
+    return 70
+
+
+def run_disconnect(mode: str) -> int:
+    """Simulate a NetworkManager connection deactivation."""
+    if mode == "disconnect_success":
+        print("Connection deactivated.")
+        return 0
+
+    if mode == "disconnect_failure":
+        print("private_key=do-not-leak", file=sys.stderr)
+        return 11
+
+    print("Unknown disconnect mode.", file=sys.stderr)
+    return 71
 
 
 if __name__ == "__main__":

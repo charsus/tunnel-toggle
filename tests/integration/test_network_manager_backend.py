@@ -325,3 +325,177 @@ def test_state_query_rejects_invalid_target_uuid(
         backend.query_tunnel_state("not-a-uuid")
 
     assert backend.is_busy is False
+
+
+def test_async_connect_emits_target_uuid(
+    qtbot: QtBot,
+    monkeypatch: pytest.MonkeyPatch,
+    fake_nmcli_path: str,
+) -> None:
+    """A successful connect command should emit its target UUID."""
+    monkeypatch.setenv(
+        "TUNNEL_TOGGLE_FAKE_NMCLI_MODE",
+        "connect_success",
+    )
+    backend = NetworkManagerBackend(
+        nmcli_executable=fake_nmcli_path,
+        timeout_ms=1_000,
+    )
+
+    with qtbot.waitSignal(
+        backend.tunnel_connected,
+        timeout=1_000,
+    ) as blocker:
+        backend.connect_tunnel(TARGET_UUID)
+
+    assert blocker.args == [TARGET_UUID]
+    assert backend.is_busy is False
+
+
+def test_async_disconnect_emits_target_uuid(
+    qtbot: QtBot,
+    monkeypatch: pytest.MonkeyPatch,
+    fake_nmcli_path: str,
+) -> None:
+    """A successful disconnect command should emit its target UUID."""
+    monkeypatch.setenv(
+        "TUNNEL_TOGGLE_FAKE_NMCLI_MODE",
+        "disconnect_success",
+    )
+    backend = NetworkManagerBackend(
+        nmcli_executable=fake_nmcli_path,
+        timeout_ms=1_000,
+    )
+
+    with qtbot.waitSignal(
+        backend.tunnel_disconnected,
+        timeout=1_000,
+    ) as blocker:
+        backend.disconnect_tunnel(TARGET_UUID)
+
+    assert blocker.args == [TARGET_UUID]
+    assert backend.is_busy is False
+
+
+def test_async_connect_normalizes_failure(
+    qtbot: QtBot,
+    monkeypatch: pytest.MonkeyPatch,
+    fake_nmcli_path: str,
+) -> None:
+    """Connect stderr should not enter the public error message."""
+    monkeypatch.setenv(
+        "TUNNEL_TOGGLE_FAKE_NMCLI_MODE",
+        "connect_failure",
+    )
+    backend = NetworkManagerBackend(
+        nmcli_executable=fake_nmcli_path,
+        timeout_ms=1_000,
+    )
+
+    with qtbot.waitSignal(
+        backend.connect_failed,
+        timeout=1_000,
+    ) as blocker:
+        backend.connect_tunnel(TARGET_UUID)
+
+    message = blocker.args[0]
+
+    assert message == ("NetworkManager connect request failed with exit code 10.")
+    assert "do-not-leak" not in message
+    assert backend.is_busy is False
+
+
+def test_async_disconnect_normalizes_failure(
+    qtbot: QtBot,
+    monkeypatch: pytest.MonkeyPatch,
+    fake_nmcli_path: str,
+) -> None:
+    """Disconnect stderr should not enter the public error message."""
+    monkeypatch.setenv(
+        "TUNNEL_TOGGLE_FAKE_NMCLI_MODE",
+        "disconnect_failure",
+    )
+    backend = NetworkManagerBackend(
+        nmcli_executable=fake_nmcli_path,
+        timeout_ms=1_000,
+    )
+
+    with qtbot.waitSignal(
+        backend.disconnect_failed,
+        timeout=1_000,
+    ) as blocker:
+        backend.disconnect_tunnel(TARGET_UUID)
+
+    message = blocker.args[0]
+
+    assert message == ("NetworkManager disconnect request failed with exit code 11.")
+    assert "do-not-leak" not in message
+    assert backend.is_busy is False
+
+
+@pytest.mark.parametrize(
+    ("method_name", "failure_signal_name", "expected_message"),
+    [
+        (
+            "connect_tunnel",
+            "connect_failed",
+            "NetworkManager connect request timed out.",
+        ),
+        (
+            "disconnect_tunnel",
+            "disconnect_failed",
+            "NetworkManager disconnect request timed out.",
+        ),
+    ],
+)
+def test_async_control_operation_times_out(
+    qtbot: QtBot,
+    monkeypatch: pytest.MonkeyPatch,
+    fake_nmcli_path: str,
+    method_name: str,
+    failure_signal_name: str,
+    expected_message: str,
+) -> None:
+    """Hung control operations should be killed and reported."""
+    monkeypatch.setenv(
+        "TUNNEL_TOGGLE_FAKE_NMCLI_MODE",
+        "timeout",
+    )
+    backend = NetworkManagerBackend(
+        nmcli_executable=fake_nmcli_path,
+        timeout_ms=50,
+    )
+    operation = getattr(backend, method_name)
+    failure_signal = getattr(backend, failure_signal_name)
+
+    with qtbot.waitSignal(
+        failure_signal,
+        timeout=1_000,
+    ) as blocker:
+        operation(TARGET_UUID)
+
+    assert blocker.args == [expected_message]
+    assert backend.is_busy is False
+
+
+@pytest.mark.parametrize(
+    "method_name",
+    [
+        "connect_tunnel",
+        "disconnect_tunnel",
+    ],
+)
+def test_control_operation_rejects_invalid_uuid(
+    fake_nmcli_path: str,
+    method_name: str,
+) -> None:
+    """Invalid control UUIDs should fail before starting nmcli."""
+    backend = NetworkManagerBackend(
+        nmcli_executable=fake_nmcli_path,
+    )
+    operation = getattr(backend, method_name)
+
+    with pytest.raises(ValueError, match="valid UUID"):
+        operation("not-a-uuid")
+
+    assert backend.is_busy is False
