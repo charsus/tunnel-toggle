@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tunnel-toggle"
+version = "0.1.0a1"
+description = "A KDE Plasma system tray application for controlling a NetworkManager tunnel."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+    { name = "Tunnel Toggle contributors" },
+]
+dependencies = [
+    "PySide6>=6.7,<7",
+]
+
+[project.scripts]
+tunnel-toggle = "tunnel_toggle.main:main"
+
+[project.optional-dependencies]
+dev = [
+    "mypy",
+    "pytest",
+    "pytest-qt",
+    "ruff",
+]
+
+[tool.setuptools.packages.find]
+include = ["tunnel_toggle*"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["tunnel_toggle"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

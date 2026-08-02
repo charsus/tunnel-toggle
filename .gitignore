@@ -1,0 +1,77 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python packaging and build output
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Test and coverage output
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Type-checking and lint caches
+.mypy_cache/
+.ruff_cache/
+.pyright/
+
+# Application logs and runtime files
+*.log
+logs/
+*.lock
+*.pid
+
+# Local settings and secrets
+.env
+.env.*
+!.env.example
+*.conf.local
+*.ini.local
+secrets/
+private/
+
+# VPN and WireGuard material
+*.key
+*.pem
+*.p12
+*.pfx
+*.ovpn
+*.nmconnection
+wg*.conf
+
+# Editors and IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# KDE and desktop temporary files
+.directory
+.directory.*
+*.desktop~
+.Trash-*
+
+# Operating system metadata
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
