@@ -11,3 +11,4 @@ All notable changes to Tunnel Toggle will be documented in this file.
 - Minimal Python package entry point
 - Initial project quality-check script
 - Architecture, security, and project documentation
+- Typed domain models for application state
