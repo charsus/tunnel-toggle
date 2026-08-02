@@ -29,3 +29,4 @@ All notable changes to Tunnel Toggle will be documented in this file.
 - Presentation-only connection setup dialog with asynchronous profile refresh
 - Runtime tray setup integration with immediate controller reconfiguration
 - Freedesktop desktop entry and AppStream application metadata
+- Conservative user-local installer and managed uninstaller

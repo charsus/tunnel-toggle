@@ -12,28 +12,37 @@ The Python distribution and executable remain:
 
     tunnel-toggle
 
-## Files
+## Metadata files
 
 - `io.github.charsus.TunnelToggle.desktop`
-  - KDE application-menu launcher
-  - Launches the installed `tunnel-toggle` entry point
+  - KDE application-menu launcher source
   - Uses the desktop theme's `network-vpn` icon
 
 - `io.github.charsus.TunnelToggle.metainfo.xml`
   - AppStream software-center metadata
-  - Uses the same stable application identity
   - Documents the application's security boundaries
 
-## Intended installation locations
+## User-local installation
 
-A user-local installer will later place the files under the XDG data
-directory:
+From a source checkout, install or update Tunnel Toggle with:
 
+    python -m tunnel_toggle.local_installer install
+
+Remove the managed installation with:
+
+    python -m tunnel_toggle.local_installer uninstall
+
+The installer does not use `sudo`. It creates an isolated virtual environment
+under the user's XDG data directory and installs managed files under:
+
+    ${XDG_DATA_HOME:-$HOME/.local/share}/tunnel-toggle/
+    $HOME/.local/bin/tunnel-toggle
     ${XDG_DATA_HOME:-$HOME/.local/share}/applications/
     ${XDG_DATA_HOME:-$HOME/.local/share}/metainfo/
 
-The installer must also ensure that the `tunnel-toggle` executable is
-discoverable by the graphical desktop session before installing the launcher.
+The installed desktop entry uses the managed launcher's absolute path and does
+not depend on the graphical session's `PATH`.
 
-These source files are not installed automatically by setuptools. Installation
-and removal will be implemented as an explicit, tested packaging workflow.
+An ownership manifest records the installed launcher and metadata hashes.
+Updates and removal are refused when those files are missing, unrecognized, or
+modified after installation.

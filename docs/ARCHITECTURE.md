@@ -60,6 +60,25 @@ are outside the initial project scope.
 Modules will be added only when their implementation milestone begins. Empty
 placeholder modules should be avoided.
 
+## User-local installation
+
+The source checkout provides a standard-library-only installer command for
+creating and removing a user-local Tunnel Toggle installation.
+
+Each installation uses an isolated, versioned virtual environment beneath the
+user's XDG data directory. A managed launcher invokes that environment's Python
+interpreter directly, without shell evaluation of user arguments.
+
+The installed desktop entry contains the managed launcher's absolute path, so
+desktop startup does not depend on the graphical session's `PATH`.
+
+An ownership manifest records the exact external files and their SHA-256
+digests. Installation refuses to overwrite unrecognized files, and uninstall
+refuses to remove files modified after installation.
+
+No installer operation requires root privileges or writes to system
+directories.
+
 ## Freedesktop application metadata
 
 Tunnel Toggle uses `io.github.charsus.TunnelToggle` as its stable desktop and
