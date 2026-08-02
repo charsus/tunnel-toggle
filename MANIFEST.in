@@ -1,0 +1,21 @@
+include CHANGELOG.md
+include LICENSE
+include README.md
+include SECURITY.md
+include pyproject.toml
+
+recursive-include docs *.md
+recursive-include packaging *.desktop *.md *.xml
+recursive-include scripts *.sh
+recursive-include tests *.py
+
+global-exclude *.py[cod]
+
+prune .git
+prune .mypy_cache
+prune .pytest_cache
+prune .ruff_cache
+prune .venv
+prune build
+prune dist
+prune tunnel_toggle.egg-info

@@ -60,6 +60,23 @@ are outside the initial project scope.
 Modules will be added only when their implementation milestone begins. Empty
 placeholder modules should be avoided.
 
+## Release artifacts
+
+Tunnel Toggle builds standard Python wheel and source-distribution artifacts
+with the PyPA `build` frontend and the setuptools build backend.
+
+The platform-independent wheel contains the installable Python package,
+distribution metadata, and `tunnel-toggle` console entry point. Development
+documentation, tests, scripts, and freedesktop source metadata remain outside
+the wheel.
+
+The source distribution includes the project documentation, tests, packaging
+metadata, and quality scripts required to inspect, test, and rebuild the
+release source.
+
+Release artifacts are inspected locally and the wheel is installed into a
+disposable virtual environment before a release is published.
+
 ## User-local installation
 
 The source checkout provides a standard-library-only installer command for

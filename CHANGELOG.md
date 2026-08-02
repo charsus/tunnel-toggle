@@ -30,3 +30,4 @@ All notable changes to Tunnel Toggle will be documented in this file.
 - Runtime tray setup integration with immediate controller reconfiguration
 - Freedesktop desktop entry and AppStream application metadata
 - Conservative user-local installer and managed uninstaller
+- Audited wheel and source-distribution build configuration

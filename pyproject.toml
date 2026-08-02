@@ -21,6 +21,7 @@ tunnel-toggle = "tunnel_toggle.main:main"
 
 [project.optional-dependencies]
 dev = [
+    "build",
     "mypy",
     "pytest",
     "pytest-qt",
