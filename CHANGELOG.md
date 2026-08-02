@@ -31,3 +31,4 @@ All notable changes to Tunnel Toggle will be documented in this file.
 - Freedesktop desktop entry and AppStream application metadata
 - Conservative user-local installer and managed uninstaller
 - Audited wheel and source-distribution build configuration
+- Read-only GitHub Actions CI for Python 3.11 and 3.13

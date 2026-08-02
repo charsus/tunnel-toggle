@@ -60,6 +60,21 @@ are outside the initial project scope.
 Modules will be added only when their implementation milestone begins. Empty
 placeholder modules should be avoided.
 
+## Continuous integration
+
+GitHub Actions runs the canonical `scripts/check.sh` quality gate for pushes
+and pull requests on Python 3.11 and Python 3.13.
+
+The workflow uses an offscreen Qt platform so application startup can be
+validated without a graphical display server.
+
+The workflow token receives read-only repository-content permission. Checkout
+credentials are not retained after source retrieval, and reusable actions are
+pinned to reviewed full commit identifiers rather than movable version tags.
+
+The workflow remains inactive while the project is local and begins operating
+after the repository is published to GitHub.
+
 ## Release artifacts
 
 Tunnel Toggle builds standard Python wheel and source-distribution artifacts
