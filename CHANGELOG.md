@@ -13,3 +13,4 @@ All notable changes to Tunnel Toggle will be documented in this file.
 - Architecture, security, and project documentation
 - Typed domain models for application state
 - Validated QSettings schema and typed settings repository
+- Rotating, privacy-conscious application logging
