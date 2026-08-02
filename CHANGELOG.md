@@ -25,3 +25,4 @@ All notable changes to Tunnel Toggle will be documented in this file.
 - Controller-aware tray presentation and tunnel toggle action
 - Production runtime composition with orderly Qt shutdown
 - Safe loading of the selected NetworkManager connection from typed settings
+- Connection setup coordination with validated UUID persistence

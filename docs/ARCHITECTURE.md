@@ -60,6 +60,20 @@ are outside the initial project scope.
 Modules will be added only when their implementation milestone begins. Empty
 placeholder modules should be avoided.
 
+## Connection setup controller
+
+Connection setup is coordinated outside the future dialog.
+
+The setup controller requests asynchronous NetworkManager discovery, exposes
+an immutable loading/ready/error state, validates selections against the latest
+discovery result, and retains selection by UUID rather than display name.
+
+Saving completes setup through the typed settings repository. The selected
+profile's UUID, last-known name, and type are replaced atomically while all
+unrelated application settings are preserved.
+
+The dialog must not access NetworkManager or raw `QSettings` keys directly.
+
 ## Runtime configuration
 
 Normal startup loads the complete validated `AppSettings` value through the
