@@ -15,3 +15,4 @@ All notable changes to Tunnel Toggle will be documented in this file.
 - Validated QSettings schema and typed settings repository
 - Rotating, privacy-conscious application logging
 - NetworkManager VPN and WireGuard profile parsing
+- Asynchronous NetworkManager connection discovery
