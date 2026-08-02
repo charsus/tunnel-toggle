@@ -16,3 +16,4 @@ All notable changes to Tunnel Toggle will be documented in this file.
 - Rotating, privacy-conscious application logging
 - NetworkManager VPN and WireGuard profile parsing
 - Asynchronous NetworkManager connection discovery
+- Read-only NetworkManager active tunnel-state queries
